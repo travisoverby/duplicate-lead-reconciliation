@@ -5,6 +5,7 @@ const crypto = require('crypto');
 const path = require('path');
 
 const config = require(path.join(__dirname, '../config/config'));
+const logger = require(path.join(__dirname, '../config/winston'));
 
 const hash = (str) => {
   if (typeof(str) === 'string' && str.length > 0) {
@@ -25,8 +26,50 @@ const loadLeads = (leadsPath) => {
   return JSON.parse(leads).leads;
 };
 
+const handleDuplicateLead = (key, lead, leadKeys, outputBuilder) => {
+  if (key) {
+    logger.info("Lead key found")
+    if (outputBuilder[key]) {
+      logger.info("Checking current lead date against old lead date")
+      const oldLead = outputBuilder[key];
+      if (lead.entryDate >= oldLead.entryDate) {
+        logger.info("Replacing old lead with new lead");
+        logger.info("Old lead");
+        logger.info(oldLead);
+        outputBuilder[key] = null;
+        leadKeys[oldLead._id] = null;
+        leadKeys[oldLead.email] = null;
+
+        const newKey = generateLeadKey(lead._id, lead.email);
+        leadKeys[lead._id] = newKey;
+        leadKeys[lead.email] = newKey;
+
+        outputBuilder[newKey] = lead;
+        logger.info("Replacement lead");
+        logger.info(lead);
+      }
+    }
+  }
+};
+
+const handleNewLead = (lead, leadKeys, outputBuilder) => {
+  if (!leadKeys[lead._id] && !leadKeys[lead.email]) {
+    logger.info("Lead not found in outputBuilder. Adding lead to builder");
+    const key = generateLeadKey(lead._id, lead.email);
+    logger.info("Generating key from lead._id and lead.email");
+    logger.info("Key: " + key);
+    leadKeys[lead._id] = key;
+    leadKeys[lead.email] = key;
+
+    outputBuilder[key] = lead;
+    logger.info("Saving lead to outputBuilder");
+    logger.info(lead);
+  }
+}
+
 module.exports = {
-  hash,
   generateLeadKey,
-  loadLeads
+  loadLeads,
+  handleDuplicateLead,
+  handleNewLead
 };
