@@ -3,7 +3,7 @@
 const path = require('path');
 
 const config = require(path.join(__dirname, 'config/config'));
-const { loadLeads, handleDuplicateLead, handleNewLead } = require(path.join(__dirname, 'lib/helpers'));
+const { loadLeads, writeLeads, handleDuplicateLead, handleNewLead } = require(path.join(__dirname, 'lib/helpers'));
 const logger = require(path.join(__dirname, 'config/winston'));
 
 
@@ -29,7 +29,7 @@ const filterDupes = (leads) => {
   
 };
 
-const deconstructOutput = (outputBuilder) => {
+const deconstructOutputBuilder = (outputBuilder) => {
   const output = [];
 
   for (const key in outputBuilder) {
@@ -43,16 +43,14 @@ const deconstructOutput = (outputBuilder) => {
 };
 
 const main = () => {
-  logger.info("Loading initial batch of leads....");
-  let leads = loadLeads(config.leadsPath);
-  logger.info(leads);
-  const outputBuilder = filterDupes(leads);
-  const output = deconstructOutput(outputBuilder);
+  const rawLeads = loadLeads(config.leadsInputPath);
 
-  logger.info("De-duplication complete");
-  logger.info(output);
+  const outputBuilder = filterDupes(rawLeads);
+  const leads = deconstructOutputBuilder(outputBuilder);
 
-  console.dir(output);
+  writeLeads(config.leadsOutputPath, leads);
+
+  console.dir(leads);
 };
 
 main();
