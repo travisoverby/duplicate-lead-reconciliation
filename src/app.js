@@ -4,15 +4,17 @@ const path = require('path');
 
 const config = require(path.join(__dirname, 'config/config'));
 const { loadLeads, generateLeadKey } = require(path.join(__dirname, 'lib/helpers'));
+const logger = require(path.join(__dirname, 'config/winston'));
 
 const filterDupes = (leads) => {
 
   const leadKeys = {};
   const outputBuilder = {};
-  const output = [];
 
   leads.forEach(lead => {
-
+    logger.info("Current lead");
+    logger.info(lead);
+    
     if (leadKeys[lead._id]) {
       let idKey = leadKeys[lead._id];
       if (outputBuilder[idKey]) {
@@ -33,7 +35,6 @@ const filterDupes = (leads) => {
 
     if (leadKeys[lead.email]) {
       let emailKey = leadKeys[lead.email];
-      console.log(lead.email + " : " + lead._id);
       if (outputBuilder[emailKey]) {
         const oldLead = outputBuilder[emailKey];
         if (lead.entryDate >= oldLead.entryDate) {
@@ -59,22 +60,34 @@ const filterDupes = (leads) => {
     }
 
   });
-  console.log();
-  console.log("======RESULTS======");
-
-  for (let key in outputBuilder) {
-    if (outputBuilder[key]) {
-      output.push(outputBuilder[key]);
-    }
-  }
-
-  console.dir(output);
+  
+  return outputBuilder;
   
 };
 
+const deconstructOutput = (outputBuilder) => {
+  const output = [];
+
+  for (const key in outputBuilder) {
+    const lead = outputBuilder[key];
+    if (lead) {
+      output.push(lead);
+    }
+  }
+
+  return output;
+};
+
 const main = () => {
+  logger.info("Loading initial batch of leads....");
   let leads = loadLeads(config.leadsPath);
-  const output = filterDupes(leads);
+  logger.info(leads);
+  const outputBuilder = filterDupes(leads);
+  const output = deconstructOutput(outputBuilder);
+
+  logger.info("De-duplication complete");
+  logger.info(output);
+  console.dir(output);
 };
 
 main();
