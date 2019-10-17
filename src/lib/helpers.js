@@ -22,12 +22,13 @@ const generateLeadKey = (id, email) => {
 
 const loadLeads = (leadsPath) => {
   logger.info("Loading initial batch of leads");
-  
-  const leads = fs.readFileSync(leadsPath);
+
+  let leads = fs.readFileSync(leadsPath);
+  leads = JSON.parse(leads);
   logger.info("Raw leads object loaded");
   logger.info(leads);
   
-  return JSON.parse(leads).leads;
+  return leads.leads;
 };
 
 const writeLeads = (writePath, leads) => {
