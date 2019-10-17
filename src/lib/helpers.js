@@ -21,21 +21,37 @@ const generateLeadKey = (id, email) => {
 };
 
 const loadLeads = (leadsPath) => {
+  logger.info("Loading initial batch of leads");
+  
   const leads = fs.readFileSync(leadsPath);
+  logger.info("Raw leads object loaded");
+  logger.info(leads);
   
   return JSON.parse(leads).leads;
+};
+
+const writeLeads = (writePath, leads) => {
+  logger.info("De-duplication complete");
+
+  const output = { leads: leads };
+  logger.info(output);
+
+  fs.writeFileSync(writePath, JSON.stringify(output));
 };
 
 const handleDuplicateLead = (key, lead, leadKeys, outputBuilder) => {
   if (key) {
     logger.info("Lead key found")
+
     if (outputBuilder[key]) {
       logger.info("Checking current lead date against old lead date")
       const oldLead = outputBuilder[key];
+
       if (lead.entryDate >= oldLead.entryDate) {
         logger.info("Replacing old lead with new lead");
         logger.info("Old lead");
         logger.info(oldLead);
+
         outputBuilder[key] = null;
         leadKeys[oldLead._id] = null;
         leadKeys[oldLead.email] = null;
@@ -48,16 +64,20 @@ const handleDuplicateLead = (key, lead, leadKeys, outputBuilder) => {
         logger.info("Replacement lead");
         logger.info(lead);
       }
+
     }
+
   }
 };
 
 const handleNewLead = (lead, leadKeys, outputBuilder) => {
   if (!leadKeys[lead._id] && !leadKeys[lead.email]) {
     logger.info("Lead not found in outputBuilder. Adding lead to builder");
+
     const key = generateLeadKey(lead._id, lead.email);
     logger.info("Generating key from lead._id and lead.email");
     logger.info("Key: " + key);
+
     leadKeys[lead._id] = key;
     leadKeys[lead.email] = key;
 
@@ -68,8 +88,8 @@ const handleNewLead = (lead, leadKeys, outputBuilder) => {
 }
 
 module.exports = {
-  generateLeadKey,
   loadLeads,
+  writeLeads,
   handleDuplicateLead,
   handleNewLead
 };
